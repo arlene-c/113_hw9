@@ -1,6 +1,7 @@
+import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from './context/AuthContext';
 
 export default function HomeScreen() {
@@ -9,12 +10,13 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (!isLoading && userEmail) {
-      router.replace('/(tabs)' as any);
+      router.replace('/dictionary' as any);
     }
   }, [isLoading, userEmail, router]);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff8fb' }}>
+      <View style={styles.container}>
       <View style={styles.heroCard}>
         <Text style={styles.emoji}>👐</Text>
         <Text style={styles.heading}>ASL Memory</Text>
@@ -38,7 +40,8 @@ export default function HomeScreen() {
           <Text style={styles.secondaryButtonText}>Sign up</Text>
         </Pressable>
       </View>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -46,7 +49,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#fff8fb',
     justifyContent: 'space-between',
   },
   heroCard: {
@@ -69,7 +71,7 @@ const styles = StyleSheet.create({
     lineHeight: 40,
     textAlign: 'center',
     marginBottom: 14,
-    fontFamily: 'Georgia',
+    fontFamily: 'PlayfairDisplay-Regular',
     color: '#3f1a2f',
   },
   description: {

@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, FlatList, Image, Pressable, StyleSheet, Text, View, Dimensions } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { ResizeMode, Video } from 'expo-av';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Dimensions, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { loadDictionaryEntries, removeDictionaryEntry } from '../../lib/storage';
 import { DictionaryEntry } from '../../lib/types';
@@ -19,9 +20,8 @@ export default function EntryDetailScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      return () => {
-        setEntries([]);
-      };
+      // Keep the current entries while this screen is focused.
+      return undefined;
     }, [])
   );
 
@@ -65,7 +65,7 @@ export default function EntryDetailScreen() {
         style: 'destructive',
         onPress: async () => {
           await removeDictionaryEntry(userEmail, id);
-          router.replace('/(tabs)' as any);
+          router.replace('/dictionary' as any);
         },
       },
     ]);
@@ -80,27 +80,32 @@ export default function EntryDetailScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loader}>
-        <Text style={styles.loadingText}>Loading sign…</Text>
-      </View>
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={styles.loader}>
+          <Text style={styles.loadingText}>Loading sign…</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (!currentEntry) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>This sign could not be found.</Text>
-        <Pressable style={styles.backButton} onPress={() => router.push('/(tabs)' as any)}>
-          <Text style={styles.backButtonText}>Go back</Text>
-        </Pressable>
-      </View>
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={styles.container}>
+          <Text style={styles.errorText}>This sign could not be found.</Text>
+          <Pressable style={styles.backButton} onPress={() => router.push('/dictionary' as any)}>
+            <Text style={styles.backButtonText}>Go back</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={{ flex: 1 }}>
+      <View style={styles.container}>
       <View style={styles.headerRow}>
-        <Pressable onPress={() => router.push('/(tabs)' as any)}>
+        <Pressable onPress={() => router.push('/dictionary' as any)}>
           <Text style={styles.backText}>← Back</Text>
         </Pressable>
         <Text style={styles.headerTitle}>Practice</Text>
@@ -116,6 +121,13 @@ export default function EntryDetailScreen() {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item.id}
+        initialScrollIndex={selectedIndex >= 0 ? selectedIndex : 0}
+        getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+        onScrollToIndexFailed={(info) => {
+          if (listRef.current) {
+            listRef.current.scrollToOffset({ offset: width * info.index, animated: false });
+          }
+        }}
         renderItem={({ item }) => (
           <View style={styles.page}>
             <View style={styles.mediaWrapper}>
@@ -145,6 +157,7 @@ export default function EntryDetailScreen() {
         <Text style={styles.pagerText}>Slide left or right to review more signs.</Text>
       </View>
     </View>
+    </SafeAreaView>
   );
 }
 

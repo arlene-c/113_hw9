@@ -1,35 +1,41 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
+import * as SecureStore from 'expo-secure-store';
 import { DictionaryEntry } from './types';
 
-const CURRENT_USER_KEY = '@asl-current-user';
-const USER_CREDENTIAL_PREFIX = '@asl-user-';
+const CURRENT_USER_KEY = 'asl-current-user';
+const USER_CREDENTIAL_PREFIX = 'asl-user-';
 
 export async function getCurrentUserEmail(): Promise<string | null> {
-  return await SecureStore.getItemAsync(CURRENT_USER_KEY);
+  return await AsyncStorage.getItem(CURRENT_USER_KEY);
 }
 
 export async function setCurrentUserEmail(email: string): Promise<void> {
-  await SecureStore.setItemAsync(CURRENT_USER_KEY, email);
+  await AsyncStorage.setItem(CURRENT_USER_KEY, email);
 }
 
 export async function clearCurrentUserEmail(): Promise<void> {
-  await SecureStore.deleteItemAsync(CURRENT_USER_KEY);
+  await AsyncStorage.removeItem(CURRENT_USER_KEY);
 }
 
 export async function hashPassword(password: string): Promise<string> {
   return await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, password);
 }
 
+export async function hashEmail(email: string): Promise<string> {
+  return await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, email);
+}
+
 export async function storeUserCredentials(email: string, passwordHash: string): Promise<void> {
-  await SecureStore.setItemAsync(`${USER_CREDENTIAL_PREFIX}${email}`, passwordHash, {
+  const hashedEmail = await hashEmail(email);
+  await SecureStore.setItemAsync(`${USER_CREDENTIAL_PREFIX}${hashedEmail}`, passwordHash, {
     keychainAccessible: SecureStore.WHEN_UNLOCKED,
   });
 }
 
 export async function getStoredPasswordHash(email: string): Promise<string | null> {
-  return await SecureStore.getItemAsync(`${USER_CREDENTIAL_PREFIX}${email}`);
+  const hashedEmail = await hashEmail(email);
+  return await SecureStore.getItemAsync(`${USER_CREDENTIAL_PREFIX}${hashedEmail}`);
 }
 
 export async function hasAccount(email: string): Promise<boolean> {
@@ -37,10 +43,14 @@ export async function hasAccount(email: string): Promise<boolean> {
   return Boolean(hash);
 }
 
-const dictionaryKey = (email: string) => `@asl-dictionary:${email}`;
+const dictionaryKey = async (email: string) => {
+  const hashedEmail = await hashEmail(email);
+  return `@asl-dictionary:${hashedEmail}`;
+};
 
 export async function loadDictionaryEntries(email: string): Promise<DictionaryEntry[]> {
-  const raw = await AsyncStorage.getItem(dictionaryKey(email));
+  const key = await dictionaryKey(email);
+  const raw = await AsyncStorage.getItem(key);
   if (!raw) {
     return [];
   }
@@ -54,15 +64,18 @@ export async function loadDictionaryEntries(email: string): Promise<DictionaryEn
 }
 
 export async function saveDictionaryEntries(email: string, entries: DictionaryEntry[]): Promise<void> {
-  await AsyncStorage.setItem(dictionaryKey(email), JSON.stringify(entries));
+  const key = await dictionaryKey(email);
+  await AsyncStorage.setItem(key, JSON.stringify(entries));
 }
 
 export async function addDictionaryEntry(email: string, entry: DictionaryEntry): Promise<void> {
   const existing = await loadDictionaryEntries(email);
-  await saveDictionaryEntries(email, [entry, ...existing]);
+  const key = await dictionaryKey(email);
+  await AsyncStorage.setItem(key, JSON.stringify([entry, ...existing]));
 }
 
 export async function removeDictionaryEntry(email: string, id: string): Promise<void> {
   const existing = await loadDictionaryEntries(email);
-  await saveDictionaryEntries(email, existing.filter((item) => item.id !== id));
+  const key = await dictionaryKey(email);
+  await AsyncStorage.setItem(key, JSON.stringify(existing.filter((item) => item.id !== id)));
 }

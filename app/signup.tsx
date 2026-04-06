@@ -1,6 +1,7 @@
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from './context/AuthContext';
 
 export default function SignupScreen() {
@@ -13,7 +14,7 @@ export default function SignupScreen() {
 
   useEffect(() => {
     if (!isLoading && userEmail) {
-      router.replace('/(tabs)' as any);
+      router.replace('/dictionary' as any);
     }
   }, [isLoading, userEmail, router]);
 
@@ -31,7 +32,7 @@ export default function SignupScreen() {
     try {
       setWorking(true);
       await signUp(email, password);
-      router.replace('/(tabs)' as any);
+      router.replace('/dictionary' as any);
     } catch (exception) {
       const message = exception instanceof Error ? exception.message : 'Sign up failed.';
       setError(message);
@@ -42,7 +43,8 @@ export default function SignupScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff5f8' }}>
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.card}>
         <Text style={styles.title}>Create your ASL account</Text>
         <Text style={styles.subtitle}>Save your signs and practice anytime.</Text>
@@ -85,8 +87,7 @@ export default function SignupScreen() {
             <Text style={styles.footerLink}>Log in</Text>
           </Pressable>
         </View>
-      </View>
-    </KeyboardAvoidingView>
+      </View>      </KeyboardAvoidingView>    </SafeAreaView>
   );
 }
 

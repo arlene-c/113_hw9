@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useCameraPermissions } from 'expo-camera';
 import CameraView from 'expo-camera/build/CameraView';
-import { PermissionResponse, useCameraPermissions } from 'expo-camera';
-import { ResizeMode, Video } from 'expo-av';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Image, Keyboard, Pressable, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { addDictionaryEntry } from '../lib/storage';
 import { DictionaryEntry } from '../lib/types';
 
 type MediaCapture = {
   uri: string;
-  type: 'photo' | 'video';
+  type: 'photo';
 };
 
 export default function AddScreen() {
@@ -17,10 +17,9 @@ export default function AddScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [media, setMedia] = useState<MediaCapture | null>(null);
   const [definition, setDefinition] = useState('');
-  const [mode, setMode] = useState<'photo' | 'video'>('photo');
-  const [isRecording, setIsRecording] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [facing, setFacing] = useState<'front' | 'back'>('front');
   const { userEmail } = useAuth();
 
   useEffect(() => {
@@ -37,27 +36,12 @@ export default function AddScreen() {
     }
 
     try {
-      if (mode === 'photo') {
-        const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 });
-        setMedia({ uri: photo.uri, type: 'photo' });
-      } else {
-        setIsRecording(true);
-        const video = await cameraRef.current.recordAsync({ maxDuration: 15, mute: true });
-        setIsRecording(false);
-        setMedia({ uri: video.uri, type: 'video' });
-      }
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 });
+      setMedia({ uri: photo.uri, type: 'photo' });
     } catch (error) {
-      Alert.alert('Capture failed', 'Unable to capture media. Please try again.');
-      setIsRecording(false);
+      Alert.alert('Capture failed', 'Unable to capture photo. Please try again.');
     }
-  }, [mode]);
-
-  const stopRecording = useCallback(() => {
-    if (cameraRef.current && isRecording) {
-      cameraRef.current.stopRecording();
-      setIsRecording(false);
-    }
-  }, [isRecording]);
+  }, []);
 
   const handleSave = async () => {
     if (!userEmail) {
@@ -105,79 +89,66 @@ export default function AddScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.cameraCard}>
-        {media ? (
-          media.type === 'photo' ? (
-            <Image source={{ uri: media.uri }} style={styles.preview} />
-          ) : (
-            <Video
-              source={{ uri: media.uri }}
-              style={styles.preview}
-              useNativeControls
-              resizeMode={ResizeMode.CONTAIN}
-              isLooping
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff7f9' }}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.container}>
+          <View style={styles.cameraCard}>
+            {media ? (
+              <Image source={{ uri: media.uri }} style={styles.preview} />
+            ) : (
+              <CameraView
+                ref={(ref) => {
+                  cameraRef.current = ref;
+                }}
+                style={styles.preview}
+                facing={facing}
+                ratio="16:9"
+              />
+            )}
+          </View>
+
+          <View style={styles.controls}>
+            <Text style={styles.sectionTitle}>Capture new sign</Text>
+
+            <Pressable style={styles.switchButton} onPress={() => setFacing(facing === 'front' ? 'back' : 'front')}>
+              <Text style={styles.switchButtonText}>Switch Camera</Text>
+            </Pressable>
+
+            <TextInput
+              style={styles.textInput}
+              placeholder="Enter sign meaning or phrase"
+              placeholderTextColor="#8e697f"
+              value={definition}
+              onChangeText={setDefinition}
+              multiline
+              returnKeyType="done"
+              onSubmitEditing={() => Keyboard.dismiss()}
+              blurOnSubmit={false}
             />
-          )
-        ) : (
-          <CameraView
-            ref={(ref) => {
-              cameraRef.current = ref;
-            }}
-            style={styles.preview}
-            facing="front"
-            ratio="16:9"
-          />
-        )}
-      </View>
 
-      <View style={styles.controls}>
-        <Text style={styles.sectionTitle}>Capture new sign</Text>
-        <View style={styles.modeRow}>
-          <Pressable
-            style={[styles.modeButton, mode === 'photo' && styles.modeButtonActive]}
-            onPress={() => setMode('photo')}
-          >
-            <Text style={[styles.modeButtonText, mode === 'photo' && styles.modeButtonTextActive]}>Photo</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.modeButton, mode === 'video' && styles.modeButtonActive]}
-            onPress={() => setMode('video')}
-          >
-            <Text style={[styles.modeButtonText, mode === 'video' && styles.modeButtonTextActive]}>Video</Text>
-          </Pressable>
+            {successMessage ? <Text style={styles.successText}>{successMessage}</Text> : null}
+
+            <View style={styles.actionRow}>
+              <Pressable
+                style={styles.captureButton}
+                onPress={handleCapture}
+              >
+                <Text style={styles.captureButtonText}>Take Photo</Text>
+              </Pressable>
+              <Pressable style={styles.saveButton} onPress={handleSave} disabled={saving}>
+                <Text style={styles.saveButtonText}>{saving ? 'Saving…' : 'Save sign'}</Text>
+              </Pressable>
+            </View>
+
+            {media ? (
+              <Pressable style={styles.retakeButton} onPress={() => setMedia(null)}>
+                <Text style={styles.retakeButtonText}>Retake photo</Text>
+              </Pressable>
+            ) : null}
+          </View>
         </View>
-
-        <TextInput
-          style={styles.textInput}
-          placeholder="Enter sign meaning or phrase"
-          placeholderTextColor="#8e697f"
-          value={definition}
-          onChangeText={setDefinition}
-          multiline
-        />
-
-        {successMessage ? <Text style={styles.successText}>{successMessage}</Text> : null}
-
-        <View style={styles.actionRow}>
-          <Pressable
-            style={[styles.captureButton, isRecording && styles.captureButtonRecording]}
-            onPress={mode === 'video' && isRecording ? stopRecording : handleCapture}
-          >
-            <Text style={styles.captureButtonText}>{mode === 'video' ? (isRecording ? 'Stop' : 'Record') : 'Capture'}</Text>
-          </Pressable>
-          <Pressable style={styles.saveButton} onPress={handleSave} disabled={saving}>
-            <Text style={styles.saveButtonText}>{saving ? 'Saving…' : 'Save sign'}</Text>
-          </Pressable>
-        </View>
-
-        {media ? (
-          <Pressable style={styles.retakeButton} onPress={() => setMedia(null)}>
-            <Text style={styles.retakeButtonText}>Retake media</Text>
-          </Pressable>
-        ) : null}
-      </View>
-    </View>
+      </TouchableWithoutFeedback>
+    </SafeAreaView>
   );
 }
 
@@ -259,9 +230,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
-  captureButtonRecording: {
-    backgroundColor: '#c12739',
-  },
   captureButtonText: {
     color: '#fff',
     fontWeight: '700',
@@ -294,5 +262,17 @@ const styles = StyleSheet.create({
   statusText: {
     color: '#7b5b70',
     fontSize: 16,
+  },
+  switchButton: {
+    backgroundColor: '#ffe8f2',
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  switchButtonText: {
+    color: '#d63384',
+    fontWeight: '700',
   },
 });

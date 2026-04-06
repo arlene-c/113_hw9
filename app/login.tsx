@@ -1,6 +1,7 @@
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from './context/AuthContext';
 
 export default function LoginScreen() {
@@ -13,7 +14,7 @@ export default function LoginScreen() {
 
   useEffect(() => {
     if (!isLoading && userEmail) {
-      router.replace('/(tabs)' as any);
+      router.replace('/dictionary' as any);
     }
   }, [isLoading, userEmail, router]);
 
@@ -27,7 +28,7 @@ export default function LoginScreen() {
     try {
       setWorking(true);
       await signIn(email, password);
-      router.replace('/(tabs)' as any);
+      router.replace('/dictionary' as any);
     } catch (exception) {
       const message = exception instanceof Error ? exception.message : 'Login failed.';
       setError(message);
@@ -38,7 +39,8 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff5f8' }}>
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.card}>
         <Text style={styles.title}>Welcome Back</Text>
         <Text style={styles.subtitle}>Sign in to access your ASL dictionary.</Text>
@@ -81,8 +83,7 @@ export default function LoginScreen() {
             <Text style={styles.footerLink}>Sign up</Text>
           </Pressable>
         </View>
-      </View>
-    </KeyboardAvoidingView>
+      </View>      </KeyboardAvoidingView>    </SafeAreaView>
   );
 }
 

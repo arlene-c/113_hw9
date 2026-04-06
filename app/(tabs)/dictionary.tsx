@@ -3,6 +3,7 @@ import { ResizeMode, Video } from 'expo-av';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { loadDictionaryEntries } from '../lib/storage';
 import { DictionaryEntry } from '../lib/types';
@@ -37,7 +38,8 @@ export default function DictionaryScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff7f9' }}>
+      <View style={styles.container}>
       <View style={styles.headerRow}>
         <Text style={styles.heading}>My ASL Dictionary</Text>
         <Pressable onPress={() => signOut()} style={styles.logoutButton}>
@@ -54,6 +56,7 @@ export default function DictionaryScreen() {
             <Text style={styles.addNowText}>Add first sign</Text>
           </Pressable>
         </View>
+        
       ) : (
         <FlatList
           data={entries}
@@ -61,7 +64,7 @@ export default function DictionaryScreen() {
           renderItem={({ item }) => (
             <Pressable
               style={styles.card}
-              onPress={() => router.push(`entry/${item.id}` as any)}
+              onPress={() => router.push(`/entry/${item.id}` as any)}
             >
               <View style={styles.thumbnailContainer}>
                 {item.type === 'photo' ? (
@@ -90,7 +93,8 @@ export default function DictionaryScreen() {
           }}
         />
       )}
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -98,7 +102,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#fff7f9',
   },
   headerRow: {
     flexDirection: 'row',
@@ -110,7 +113,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: '800',
     color: '#4f1f3c',
-    fontFamily: 'Georgia',
+    fontFamily: 'PlayfairDisplay-Regular',
   },
   logoutButton: {
     backgroundColor: '#ffd9ef',
